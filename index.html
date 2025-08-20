@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Cinemaps WebAR</title>
+    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <script src="https://cdn.rawgit.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js"></script>
+    <style>
+      body { 
+        margin: 0; 
+        overflow: hidden; 
+        font-family: 'Segoe UI', sans-serif;
+        background: #000;
+        touch-action: manipulation;
+      }
+
+      /* Overlay Tap */
+      #tapOverlay {
+        position: fixed;
+        top: 0; left: 0;
+        width: 100vw; height: 100vh;
+        background: rgba(0,0,0,0.85);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        z-index: 10000;
+        color: white;
+        text-align: center;
+      }
+      .tap-icon { font-size: 70px; margin-bottom: 20px; }
+      .tap-instruction { font-size: 22px; font-weight: bold; }
+      .subtitle { font-size: 15px; opacity: 0.8; margin-top: 10px; }
+
+      /* Title */
+      #ui {
+        position: fixed;
+        top: 15px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0,0,0,0.6);
+        padding: 10px 20px;
+        border-radius: 20px;
+        z-index: 999;
+        color: white;
+        font-size: 18px;
+        font-weight: 600;
+        text-shadow: 0px 2px 8px rgba(0,0,0,0.8);
+      }
+
+      /* Navigation Buttons */
+      .nav-button {
+        position: fixed;
+        top: 50%;
+        transform: translateY(-50%);
+        background: rgba(0,0,0,0.5);
+        border: none;
+        color: white;
+        font-size: 26px;
+        border-radius: 50%;
+        width: 55px; height: 55px;
+        cursor: pointer;
+        z-index: 999;
+      }
+      #prevButton { left: 15px; }
+      #nextButton { right: 15px; }
+    </style>
+  </head>
+  <body>
+    <!-- Tap to Play Overlay -->
+    <div id="tapOverlay">
+      <div class="tap-icon">📱</div>
+      <div class="tap-instruction">Tap layar untuk memulai video</div>
+      <div class="subtitle">Arahkan kamera ke area datar</div>
+    </div>
+
+    <!-- Title -->
+    <div id="ui">
+      <div id="title">Posko KKN</div>
+    </div>
+
+    <!-- Buttons -->
+    <button id="prevButton" class="nav-button" onclick="event.stopPropagation(); prevVideo()">⏮️</button>
+    <button id="nextButton" class="nav-button" onclick="event.stopPropagation(); nextVideo()">⏭️</button>
+
+    <!-- AR Scene -->
+    <a-scene
+      embedded
+      arjs="sourceType: webcam; debugUIEnabled: false; trackingMethod: best;"
+      vr-mode-ui="enabled: false"
+      renderer="logarithmicDepthBuffer: true; antialias: true; colorManagement: true;"
+      loading-screen="enabled: false">
+     
+      <!-- Kamera -->
+      <a-camera position="0 1.6 0"></a-camera>
+      
+      <!-- Plane Video -->
+      <a-plane 
+        id="videoPlane" 
+        position="0 1.5 -5" 
+        rotation="0 0 0" 
+        width="3.5" 
+        height="2" 
+        material="shader: flat; src: #vid1; opacity: 0;"
+        visible="false">
+      </a-plane>
+      
+      <!-- Assets -->
+      <a-assets>
+        <video id="vid1" src="asset/POSKO.mp4" loop muted playsinline crossorigin="anonymous"></video>
+        <video id="vid2" src="asset/Joglo.mov" loop muted playsinline crossorigin="anonymous"></video>
+        <video id="vid3" src="asset/Plunyon.mov" loop muted playsinline crossorigin="anonymous"></video>
+        <video id="vid4" src="asset/Batukapal.mov" loop muted playsinline crossorigin="anonymous"></video>
+      </a-assets>
+    </a-scene>
+
+    <script>
+      const videos = [
+        { id: "#vid1", title: "Posko KKN" },
+        { id: "#vid2", title: "Joglo Wanagama" },
+        { id: "#vid3", title: "Batu Kapal" },
+        { id: "#vid4", title: "Jembatan Plunyon" }
+      ];
+
+      let currentIndex = 0;
+      let videoStarted = false;
+
+      const plane = document.getElementById("videoPlane");
+      const title = document.getElementById("title");
+      const tapOverlay = document.getElementById("tapOverlay");
+
+      function startVideo() {
+        if (videoStarted) return;
+        videoStarted = true;
+        tapOverlay.style.display = "none"; // overlay hilang
+
+        plane.setAttribute("visible", "true");
+        plane.setAttribute("material", "opacity", "1");
+
+        videos.forEach(v => {
+          const videoEl = document.querySelector(v.id);
+          videoEl.play().catch(e => console.log("Video play error:", e));
+        });
+
+        updateVideo();
+      }
+
+      function updateVideo() {
+        if (!videoStarted) return;
+        const v = videos[currentIndex];
+        plane.setAttribute("material", "src", v.id);
+        title.innerText = v.title;
+
+        const videoEl = document.querySelector(v.id);
+        videoEl.currentTime = 0;
+        videoEl.play().catch(e => console.log("Video play error:", e));
+      }
+
+      function nextVideo() {
+        if (!videoStarted) { startVideo(); return; }
+        currentIndex = (currentIndex + 1) % videos.length;
+        updateVideo();
+      }
+
+      function prevVideo() {
+        if (!videoStarted) { startVideo(); return; }
+        currentIndex = (currentIndex - 1 + videos.length) % videos.length;
+        updateVideo();
+      }
+
+      document.body.addEventListener("click", startVideo);
+      document.body.addEventListener("touchstart", startVideo);
+      document.addEventListener("contextmenu", e => e.preventDefault());
+    </script>
+  </body>
+</html>
